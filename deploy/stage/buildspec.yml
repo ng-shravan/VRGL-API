@@ -1,0 +1,26 @@
+version: 0.2
+env:
+  variables:
+    working_environment: "stage"
+
+  parameter-store:
+    vrgl_db_host_url: "/VRGL/stage/db/host/url"
+    vrgl_app_db_name: "/VRGL/stage/app/db/name"
+    vrgl_db_usrname: "/VRGL/stage/db/usrname"
+    vrgl_db_pwd: "/VRGL/stage/db/pwd"
+    vrgl_security_db_name: "/VRGL/stage/security/db/name"
+phases:
+  pre_build:
+    commands: 
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 474668418298.dkr.ecr.us-east-1.amazonaws.com
+  build:
+    commands:
+      - docker build -t vrgl-api --build-arg working_environment=$working_environment --build-arg vrgl_db_host_url=$vrgl_db_host_url --build-arg vrgl_app_db_name=$vrgl_app_db_name --build-arg vrgl_db_usrname=$vrgl_db_usrname --build-arg vrgl_db_pwd=$vrgl_db_pwd --build-arg vrgl_security_db_name=$vrgl_security_db_name .
+      - docker tag vrgl-api:latest 474668418298.dkr.ecr.us-east-1.amazonaws.com/vrgl-api:latest
+  post_build:
+    commands:
+      - docker push 474668418298.dkr.ecr.us-east-1.amazonaws.com/vrgl-api:latest
+      - printf '[{"name":"analytics","imageUri":"%s"}]' 474668418298.dkr.ecr.us-east-1.amazonaws.com/vrgl-api:latest > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
